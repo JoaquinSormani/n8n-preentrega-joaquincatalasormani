@@ -1,0 +1,224 @@
+{
+  "name": "Pre-Entrega-JoaquinCatalaSormani",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n**API - Consultar Precio BTC**: Realiza una petición GET a CoinGecko para obtener la cotización en tiempo real del Bitcoin en USD.",
+        "height": 560,
+        "width": 214,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        144,
+        -288
+      ],
+      "typeVersion": 1,
+      "id": "17e632c6-09cf-4b35-a91b-e32d5d594b41",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "\n\n\n\n\n\n\n**Webhook (Recibir Objetivo)**: Punto de entrada. Recibe mediante POST el precio_objetivo enviado por el usuario desde Postman.",
+        "height": 560,
+        "width": 256,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -224,
+        -288
+      ],
+      "typeVersion": 1,
+      "id": "2dd3fe47-1801-4d49-899f-eaf487044453",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "**¿Precio Actual > Objetivo?:** Nodo condicional que compara si el precio obtenido de la API es mayor al precio objetivo definido por el usuario.\n\n**Notificar Alerta (True):** Si la condición se cumple, redacta y envía un correo HTML con los detalles de la subida de precio.\n\n**Log:** No Superó Objetivo (False): Si la condición no se cumple, simplemente estructura los datos para registro interno, sin disparar notificaciones (evita spam).",
+        "height": 576,
+        "width": 464,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        -288
+      ],
+      "typeVersion": 1,
+      "id": "bce146df-828b-4667-9a03-4e0e5806c7d9",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "check-cryto",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -144,
+        0
+      ],
+      "id": "59ab556f-b930-4746-86f4-c6e856ecc181",
+      "name": "Webhook (Recibir Objetivo)",
+      "webhookId": "b06526ee-c377-463a-8c78-bd4cad12bedf"
+    },
+    {
+      "parameters": {
+        "url": "https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3ba99ca4-b529-42fe-9b45-2705d3cdca97",
+      "name": "API - Consultar Precio BTC"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "a5c176f0-ba61-428f-9d20-6c164427b96a",
+              "leftValue": "={{ $json.bitcoin.usd }}",
+              "rightValue": "={{ $('Webhook (Recibir Objetivo)').item.json.body.precio_objetivo }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        512,
+        0
+      ],
+      "id": "e3dc081b-636b-4882-bd9a-9cf1bcc89775",
+      "name": "¿Precio Actual > Objetivo?"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Webhook (Recibir Objetivo)').item.json.body.email_usuario }}",
+        "subject": "¡Alerta! Bitcoin superó el objetivo",
+        "message": "=<div style=\"font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f4f4; padding: 40px 0;\">\n  <div style=\"max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);\">\n    \n    <div style=\"background-color: #F7931A; padding: 30px; text-align: center;\">\n      <h1 style=\"color: #ffffff; margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 1px;\">🚀 Bitcoin Alerta</h1>\n    </div>\n\n    <div style=\"padding: 40px 30px; text-align: center;\">\n      <p style=\"color: #666666; font-size: 16px; line-height: 1.5; margin-bottom: 30px;\">\n        ¡Hola! El mercado se está moviendo y tu condición se ha cumplido.\n      </p>\n      \n      <div style=\"background-color: #f9f9f9; border-left: 5px solid #4CAF50; padding: 20px; margin-bottom: 30px; text-align: left;\">\n        <p style=\"margin: 0 0 10px 0; font-size: 14px; color: #888;\">\n          🎯 Tu Objetivo: <strong style=\"color: #333;\">$ {{ $('Webhook (Recibir Objetivo)').item.json.body.precio_objetivo }} USD</strong>\n        </p>\n        <p style=\"margin: 0; font-size: 20px; color: #333;\">\n          💰 Precio Actual: <strong style=\"color: #4CAF50;\">$ {{ $json.bitcoin.usd }} USD</strong>\n        </p>\n      </div>\n\n      <a href=\"https://www.coindesk.com/price/bitcoin\" style=\"display: inline-block; background-color: #333333; color: #ffffff; text-decoration: none; padding: 12px 25px; border-radius: 4px; font-weight: bold;\">Ver Gráfico en Vivo</a>\n    </div>\n\n    <div style=\"background-color: #eeeeee; padding: 15px; text-align: center; font-size: 12px; color: #999999;\">\n      Enviado automáticamente vía n8n workflow\n    </div>\n  </div>\n</div>",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        -64
+      ],
+      "id": "8b7abbaa-2f07-4ddf-bed7-adc1e5237b16",
+      "name": "Notificar Alerta",
+      "webhookId": "e0fa4fe8-4cd3-48c9-8a36-e8d137ad9561",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "1x6Y1tOxwrGN4hWj",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3fda5211-0290-48a4-8387-e976ad106d47",
+              "name": "timestamp",
+              "value": "={{ new Date().toLocaleString(\"sv-SE\", { timeZone: \"America/Argentina/Buenos_Aires\" }) }}",
+              "type": "string"
+            },
+            {
+              "id": "358fa49b-942c-47a8-9679-f04867051f0f",
+              "name": "Status",
+              "value": "Todavía no supero el objetivo !",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        720,
+        96
+      ],
+      "id": "1f5c8319-b56c-4aa9-9e62-2840a79f61d0",
+      "name": "Log: No Superó Objetivo"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook (Recibir Objetivo)": {
+      "main": [
+        [
+          {
+            "node": "API - Consultar Precio BTC",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "API - Consultar Precio BTC": {
+      "main": [
+        [
+          {
+            "node": "¿Precio Actual > Objetivo?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "¿Precio Actual > Objetivo?": {
+      "main": [
+        [
+          {
+            "node": "Notificar Alerta",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log: No Superó Objetivo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0e7bf052-9d85-4267-9295-2d182c03f05d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5984f16e9b8445e54fb864f33c0f9a2cdc358cfc51eb6b582a425f1da57f4e0d"
+  },
+  "id": "SlK3azjroqp3qBLRpkh2V",
+  "tags": []
+}
